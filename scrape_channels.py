@@ -10,6 +10,7 @@ Options:
 
 from docopt import docopt
 import pandas as pd
+import numpy as np
 import requests
 from bs4 import BeautifulSoup
 from datetime import date
@@ -22,12 +23,21 @@ def channel_verified(title_html_obj):
 
 def channel_subs(subs_html_obj):
     subs_string = subs_html_obj.text
-    subs_int = ''
+    subs_int = np.nan
     if 'subscribers' in subs_string:
         subs_int = int(subs_string.replace('subscribers', '').replace(' ', ''))
     elif 'online' in subs_string:
         subs_int = int(subs_string.split(',')[0].replace(' members', '').replace(' ', ''))
     return subs_int
+
+
+def channel_or_group(subs_html_obj):
+    subs_string = subs_html_obj.text
+    if 'subscribers' in subs_string:
+        return 'channel'
+    elif 'online' in subs_string:
+        return 'group'
+    return ''
 
 def channel_desc(desc_html_obj):
     if desc_html_obj:
@@ -39,7 +49,7 @@ def channel_desc(desc_html_obj):
 if __name__ == '__main__':
     args = docopt(__doc__)
     urls = []
-    tele_channels = pd.DataFrame(columns=['channel', 'verified', 'description', 'subscribers', 'url', 'date_accessed'])
+    tele_channels = pd.DataFrame(columns=['channel', 'verified', 'description', 'subscribers', 'type', 'url', 'date_accessed'])
     date_scraping = date.today().strftime('%y%m%d')
 
     
@@ -61,15 +71,19 @@ if __name__ == '__main__':
                        'verified': channel_verified(soup.find(class_='tgme_page_title')),
                        'description': channel_desc(soup.find(class_='tgme_page_description')),
                        'subscribers': channel_subs(soup.find(class_='tgme_page_extra')),
+                       'type': channel_or_group(soup.find(class_='tgme_page_extra')),
                        'url': tele_url,
                        'date_accessed': date_scraping}
-
             tele_channels = tele_channels.append(channel_info, ignore_index=True)
         except:
             error_urls.append(urls[i])
             continue
-        
-    export_filename = f'data/scrape_channels_{date_scraping}.csv'
+      
+    tele_channels = tele_channels.sort_values(by='subscribers', ascending=False)
+    
+    input_filename = args.get('FILE').split('/')[-1].split('.')[0]
+    export_filename = f'data/scrape_{input_filename}_{date_scraping}.csv'
+    
     tele_channels.to_csv(export_filename, index=False)
     print(f'Exported scraped data to {export_filename}')
     if len(error_urls)>0:
