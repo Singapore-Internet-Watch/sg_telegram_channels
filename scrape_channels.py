@@ -1,11 +1,13 @@
 """Scrapes Telegram channel information and outputs a csv file.
 
 Usage:
-    scrape_channels.py CHANNEL_URL
-    scrape_channels.py --file FILE
+    scrape_channels.py [options] CHANNEL_URL 
+    scrape_channels.py [options] --file FILE
+
     
 Options:
-    --file  Pass a file of channel names to scrape.
+    --file   Pass a file of channel names to scrape.
+    -l LIMIT  Specify the minimum group size to retain in scraped list [default: 1000]
 """
 
 from docopt import docopt
@@ -51,7 +53,6 @@ if __name__ == '__main__':
     urls = []
     tele_channels = pd.DataFrame(columns=['channel', 'verified', 'description', 'subscribers', 'type', 'url', 'date_accessed'])
     date_scraping = date.today().strftime('%y%m%d')
-
     
     if args['--file']:
         with open(args.get('FILE')) as f: 
@@ -80,6 +81,12 @@ if __name__ == '__main__':
             continue
       
     tele_channels = tele_channels.sort_values(by='subscribers', ascending=False)
+    
+    group_min_limit = int(args['-l'])
+    dropped = tele_channels[tele_channels['subscribers']<group_min_limit].shape[0]
+    tele_channels = tele_channels[tele_channels['subscribers']>group_min_limit]
+    print(f'Leaving out {dropped} of {len(urls)} channels/groups as they have fewer than LIMIT={group_min_limit} subscribers/members.')
+    print(f'Saving data for total of {tele_channels.shape[0]} channels')
     
     input_filename = args.get('FILE').split('/')[-1].split('.')[0]
     export_filename = f'data/scrape_{input_filename}_{date_scraping}.csv'
