@@ -14,7 +14,7 @@ As an example running the `sample_list.txt` file creates `scrape_channels_210805
 Scripts:
 * `scrape_channels.py`: scraper for telegram channel information
     * [ ] TODO: multiprocessing to make it faster 
-
+    * [ ] TODO: script to concat all scraped data, flag channels that have been removed/no longer scrape-able
 Data Files:
 inputs: 
 * `sample_list.txt`: a sample of 10 urls
